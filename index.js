@@ -148,7 +148,7 @@ function buildTaskPayload(inputs) {
   if (inputs.authType) {
     configTemplate.authType = inputs.authType;
   }
-
+  core.info(`show repoUrl: ${inputs.repoUrl}`);
   return {
     repo_url: inputs.repoUrl,
     branch: inputs.branch,
@@ -162,6 +162,7 @@ function buildTaskPayload(inputs) {
 async function createTask(baseEndpoint, token, inputs) {
   const url = `${baseEndpoint}/v3/task`;
   const payload = buildTaskPayload(inputs);
+  core.info(`build TaskPayload seuccessful);
   const response = await requestJson(url, {
     method: "POST",
     headers: {
