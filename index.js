@@ -171,7 +171,7 @@ async function createTask(baseEndpoint, token, inputs) {
     },
     body: JSON.stringify(payload),
   });
-
+  core.info(`create task sueccessful`);
   const taskId = response.body?.result?.id;
   if (!taskId) {
     throw new Error(`Create task succeeded but task id not found. Response: ${JSON.stringify(response.body)}`);
