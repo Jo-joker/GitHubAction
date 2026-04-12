@@ -60,8 +60,7 @@ function decodeBase64(str) {
 }
 
 async function requestJson(url, options = {}, expectedStatuses = [200]) {
-  const text = await options.text();
-  core.info(`show url ${url},and show options ${text}`);
+  core.info(`show url ${url}`);
   const response = await fetch(url, options);
   core.info(`fetch repo sueccessful`);
   const text = await response.text();
