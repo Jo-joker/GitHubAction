@@ -1,19 +1,120 @@
+name: "CodeArts Check Analyzer"
+description: "Create and run a Huawei Cloud CodeArts Check task, then publish a Markdown report to another GitHub repository."
+author: "Jo-joker"
 
-能描述；
-背景：为了帮助用户更直观的了解部署模板的内容，建议在选中某一个模板之后在模板右侧的空白处对模板的内容或者功能进行预览，帮助用户快速了解模板的功能。
+inputs:
+  codearts_endpoint:
+    description: "CodeArts Check API endpoint, for example https://codeartscheck.cn-north-4.myhuaweicloud.com"
+    required: true
+  codearts_token:
+    description: "Huawei Cloud X-Auth-Token. If empty, IAM username/password flow is used."
+    required: false
+  iam_endpoint:
+    description: "IAM endpoint used to obtain X-Auth-Token. Can be full URL or host root. Example: https://iam.myhuaweicloud.com"
+    required: false
+    default: "https://iam.myhuaweicloud.com"
+  iam_username:
+    description: "IAM username (used only when codearts_token is not provided)"
+    required: false
+  iam_password:
+    description: "IAM password (used only when codearts_token is not provided)"
+    required: false
+  iam_domain_name:
+    description: "IAM account/domain name (used only when codearts_token is not provided)"
+    required: false
+  iam_project_name:
+    description: "IAM project name used for token scope (used only when codearts_token is not provided)"
+    required: false
+  project_id:
+    description: "CodeArts project ID"
+    required: true
+  project_name:
+    description: "CodeArts project name"
+    required: true
+  repo_url:
+    description: "Code repository URL configured in CodeArts Check task"
+    required: true
+  branch:
+    description: "Branch to check"
+    required: true
+    default: "main"
+  task_name:
+    description: "CodeArts Check task name"
+    required: true
+  repo_type:
+    description: "Repository type: DevCloud, Gitee, GitHub, GitPub, gitcode, gitlab, self_gitlab, tfs_git, bitbucket"
+    required: true
+    default: "GitHub"
+  rule_language:
+    description: "Language field in rule_sets (for example Java, Python, C++)"
+    required: true
+    default: "Java"
+  auth_id:
+    description: "Code source endpoint authId for non-DevCloud repos (optional)"
+    required: false
+  auth_type:
+    description: "Authorization type for non-DevCloud repos (optional)"
+    required: false
+  run_ref:
+    description: "Optional run ref mode: pull or merge_request"
+    required: false
+  timeout_seconds:
+    description: "Max wait time for task completion"
+    required: false
+    default: "1800"
+  poll_interval_seconds:
+    description: "Polling interval in seconds for execution status"
+    required: false
+    default: "15"
+  include_status_ids:
+    description: "Defect status filter for defects detail API. 0=pending,1=resolved,2=ignored (comma-separated allowed)"
+    required: false
+    default: "0"
+  max_defects:
+    description: "Maximum number of defects to include in report"
+    required: false
+    default: "500"
+  report_repo:
+    description: "Target report repository in owner/repo format"
+    required: false
+    default: "Jo-joker/maven-demo"
+  report_dir:
+    description: "Directory in target repo where report is uploaded"
+    required: false
+    default: "analyze"
+  report_branch:
+    description: "Optional target branch in report repository"
+    required: false
+  report_commit_message:
+    description: "Commit message for uploading report"
+    required: false
+    default: "docs: add CodeArts Check analysis report"
+  github_token:
+    description: "GitHub token with contents:write permission on target report repo"
+    required: true
+  fail_on_job_failure:
+    description: "If true, fail action when job status is failed or aborted"
+    required: false
+    default: "false"
 
-需求：
-1、模板在被选中后才展示预览内容；
+outputs:
+  task_id:
+    description: "Created CodeArts task ID"
+  exec_id:
+    description: "CodeArts execution record ID"
+  job_status:
+    description: "Execution status: quering/running/success/failed/aborted"
+  report_path:
+    description: "Uploaded report path in report repository"
+  report_url:
+    description: "HTML URL of uploaded report file"
+  report_sha:
+    description: "Git blob SHA of uploaded report content"
 
-2、预览内容主要以流程图的方式展示给用户，表示模板中的每一作用。e.g. tomcat模板，预览中的内容跟模板实际中的部署步骤保持一致，以流程图展示。
+runs:
+  using: "node20"
+  main: "index.js"
 
-3、对于由单一的部署步骤构成的模板，已部署步骤中的内容进行介绍。e.g. Kubernetes部署为例。以用户需要输入的集“群->命名空间->Manifest配置文件”等对应到流程图中。
-
-说明：
-1、一个模板中包含的部署步骤数通常在10个以内。最高不多余20个。
-2、预览的风格是否可以做成组件形式的标准格式，后续我们有新的模
-
-
-
-
-
+branding:
+  icon: "check-circle"
+  color: "blue"
