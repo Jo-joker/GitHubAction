@@ -1,0 +1,38 @@
+name: CodeArts Check Analyze
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run CodeArts Check and publish report
+        uses: ./
+        with:
+          codearts_endpoint: ${{ secrets.CODEARTS_ENDPOINT }}
+          codearts_token: ${{ secrets.CODEARTS_TOKEN }}
+          # If CODEARTS_TOKEN is not configured, set IAM secrets below:
+          # iam_endpoint: https://iam.myhuaweicloud.com
+          # iam_username: ${{ secrets.HW_IAM_USERNAME }}
+          # iam_password: ${{ secrets.HW_IAM_PASSWORD }}
+          # iam_domain_name: ${{ secrets.HW_IAM_DOMAIN_NAME }}
+          # iam_project_name: ${{ secrets.HW_IAM_PROJECT_NAME }}
+          project_id: ${{ secrets.CODEARTS_PROJECT_ID }}
+          project_name: ${{ secrets.CODEARTS_PROJECT_NAME }}
+          repo_url: ${{ secrets.CODEARTS_REPO_URL }}
+          branch: main
+          task_name: maven-demo-main-check
+          repo_type: GitHub
+          rule_language: Java
+          report_repo: Jo-joker/maven-demo
+          report_dir: analyze
+          github_token: ${{ secrets.REPORT_REPO_TOKEN }}

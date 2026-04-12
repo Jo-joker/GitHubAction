@@ -93,6 +93,10 @@ jobs:
           github_token: ${{ secrets.REPORT_REPO_TOKEN }}
 ```
 
+This repository also includes a ready-to-use example file:
+
+- `.github/workflows/codearts-check.yml`
+
 ## Notes
 
 - Creating a task on every run may fail if your project enforces unique task names. Use dynamic `task_name` or adjust your task management strategy.
