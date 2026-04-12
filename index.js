@@ -60,7 +60,9 @@ function decodeBase64(str) {
 }
 
 async function requestJson(url, options = {}, expectedStatuses = [200]) {
+  core.info(`show url ${url},and show options ${options}`);
   const response = await fetch(url, options);
+  core.info(`fetch repo sueccessful`);
   const text = await response.text();
   let body = {};
   if (text) {
@@ -372,7 +374,7 @@ function buildMarkdownReport(context) {
   lines.push("");
   lines.push("## Defects");
   lines.push("");
-  lines.push(`Total defects fetched: **${defects.length}**`);
+  lines.push(`Total defects ed: **${defects.length}**`);
   lines.push("");
 
   if (defects.length === 0) {
@@ -494,7 +496,7 @@ async function putFile(githubToken, owner, repo, path, branch, message, content,
   };
 }
 
-async function fetchDefects(baseEndpoint, token, taskId, statusIds, maxDefects) {
+async function Defects(baseEndpoint, token, taskId, statusIds, maxDefects) {
   const defects = [];
   let offset = 0;
   const pageLimit = 200;
@@ -592,8 +594,8 @@ async function run() {
 
     core.info("Querying summary and defects.");
     const summary = await getSummary(inputs.codeartsEndpoint, token, taskId, execId);
-    const defects = await fetchDefects(inputs.codeartsEndpoint, token, taskId, inputs.includeStatusIds, inputs.maxDefects);
-    core.info(`Fetched defects: ${defects.length}`);
+    const defects = await Defects(inputs.codeartsEndpoint, token, taskId, inputs.includeStatusIds, inputs.maxDefects);
+    core.info(`ed defects: ${defects.length}`);
 
     const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
     const markdown = buildMarkdownReport({
