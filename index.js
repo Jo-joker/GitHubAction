@@ -165,6 +165,7 @@ async function createTask(baseEndpoint, token, inputs) {
   const url = `${baseEndpoint}/v3/task`;
   const payload = buildTaskPayload(inputs);
   core.info(`build TaskPayload seuccessful`);
+  core.info(`show payload ${payload}`);
   const response = await requestJson(url, {
     method: "POST",
     headers: {
