@@ -110,6 +110,7 @@ This repository also includes a standalone demo application for a phone inspecti
 - Product design document: `docs/jetson-sop-product-design.md`
 - Demo source: `apps/phone-sop-vision-demo`
 - Linux x64 standalone package output: `dist/phone-sop-vision-demo-linux-x64.tar.gz`
+- Windows x64 standalone package output: `dist/phone-sop-vision-demo-windows-x64.zip`
 
 Run locally during development:
 
@@ -123,3 +124,11 @@ Build the standalone binary package:
 ```bash
 npm run build:sop-demo
 ```
+
+Windows users should unzip `dist/phone-sop-vision-demo-windows-x64.zip` and run:
+
+```powershell
+.\phone-sop-vision-demo-windows-x64\sop-vision-demo.exe --no-open
+```
+
+The Linux `sop-vision-demo` binary cannot run on Windows and will fail with `Exec format error`.
