@@ -40,12 +40,22 @@ npm run build:sop-demo
 
 - `dist/phone-sop-vision-demo-linux-x64/sop-vision-demo`
 - `dist/phone-sop-vision-demo-linux-x64.tar.gz`
+- `dist/phone-sop-vision-demo-windows-x64/sop-vision-demo.exe`
+- `dist/phone-sop-vision-demo-windows-x64.zip`
 
-运行二进制：
+Linux 运行：
 
 ```bash
 ./dist/phone-sop-vision-demo-linux-x64/sop-vision-demo --no-open
 ```
+
+Windows 运行：
+
+```powershell
+.\dist\phone-sop-vision-demo-windows-x64\sop-vision-demo.exe --no-open
+```
+
+> 注意：Linux 包中的 `sop-vision-demo` 是 ELF 可执行文件，不能在 Windows 中运行；Windows 需要使用 `phone-sop-vision-demo-windows-x64.zip` 内的 `sop-vision-demo.exe`。
 
 ## 说明
 

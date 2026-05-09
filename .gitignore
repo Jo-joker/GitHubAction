@@ -1,3 +1,5 @@
 node_modules/
 dist/*.blob
+dist/.cache/
 dist/phone-sop-vision-demo-linux-x64/
+dist/phone-sop-vision-demo-windows-x64/
