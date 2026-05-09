@@ -102,3 +102,24 @@ This repository also includes a ready-to-use example file:
 - Creating a task on every run may fail if your project enforces unique task names. Use dynamic `task_name` or adjust your task management strategy.
 - Ensure the CodeArts account has permissions to create and execute tasks and read reports.
 - Ensure `github_token` can write to the target report repository.
+
+## Phone SOP Vision Demo
+
+This repository also includes a standalone demo application for a phone inspection and packaging AI vision SOP compliance system.
+
+- Product design document: `docs/jetson-sop-product-design.md`
+- Demo source: `apps/phone-sop-vision-demo`
+- Linux x64 standalone package output: `dist/phone-sop-vision-demo-linux-x64.tar.gz`
+
+Run locally during development:
+
+```bash
+npm install
+npm run start:sop-demo
+```
+
+Build the standalone binary package:
+
+```bash
+npm run build:sop-demo
+```

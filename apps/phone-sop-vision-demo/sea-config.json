@@ -1,0 +1,5 @@
+{
+  "main": "apps/phone-sop-vision-demo/server.js",
+  "output": "dist/sop-vision-demo.blob",
+  "disableExperimentalSEAWarning": true
+}
