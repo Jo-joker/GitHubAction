@@ -4,9 +4,30 @@
 const http = require("node:http");
 const { spawn } = require("node:child_process");
 
-const APP_NAME = "手机检测与包装 AI 视觉 SOP 合规检测系统";
+const APP_NAME = "AI 视觉 SOP 合规检测系统";
 const DEFAULT_PORT = 4788;
 const DEFAULT_HOST = "127.0.0.1";
+
+const SOP_STEPS = [
+  {
+    id: 1,
+    name: "正面",
+    requiredObjects: ["product_front"],
+    failedMessage: "本次操作未按照SOP规范检测",
+  },
+  {
+    id: 2,
+    name: "反面",
+    requiredObjects: ["product_back"],
+    failedMessage: "本次操作未按照SOP规范检测",
+  },
+  {
+    id: 3,
+    name: "整体",
+    requiredObjects: ["product_whole"],
+    failedMessage: "由于正面（反面）检测操作不符合SOP规范，请重新检测。",
+  },
+];
 
 function parseArgs(argv) {
   const options = {
@@ -82,22 +103,21 @@ function createServer() {
       sendJson(response, 200, {
         ok: true,
         name: APP_NAME,
-        version: "1.0.0",
-        mode: "standalone-demo",
+        version: "2.0.0",
+        mode: "three-step-sop-demo",
       });
       return;
     }
 
     if (url.pathname === "/api/design") {
       sendJson(response, 200, {
-        project: "手机检测与包装SOP",
-        steps: [
-          { id: 1, name: "开口空盒检测", requiredObjects: ["open_box"] },
-          { id: 2, name: "放入手机并检测外观", requiredObjects: ["phone"] },
-          { id: 3, name: "放入说明书/保修卡", requiredObjects: ["manual", "warranty_card"] },
-          { id: 4, name: "放入充电线与配件", requiredObjects: ["cable", "sim_pin"] },
-          { id: 5, name: "合盖封装", requiredObjects: ["closed_box"] },
-        ],
+        project: "产品三步检测SOP",
+        statuses: ["Idle", "Running", "Pass", "Failed"],
+        steps: SOP_STEPS,
+        messages: {
+          frontOrBackFailed: "本次操作未按照SOP规范检测",
+          overallPreconditionFailed: "由于正面（反面）检测操作不符合SOP规范，请重新检测。",
+        },
       });
       return;
     }
@@ -164,63 +184,48 @@ const INDEX_HTML = String.raw`<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>手机检测与包装 AI 视觉 SOP 合规检测系统</title>
+  <title>AI 视觉 SOP 合规检测系统</title>
   <style>
     :root {
       color-scheme: dark;
       --bg: #07111f;
-      --panel: #0c1b2f;
-      --panel-2: #10243e;
+      --panel: rgba(7, 17, 31, 0.88);
+      --panel-2: rgba(16, 36, 62, 0.82);
       --line: #24486d;
       --cyan: #38d5ff;
       --green: #26d07c;
       --blue: #3c8dff;
-      --yellow: #f2c94c;
       --red: #ff5c6c;
-      --muted: #86a4bf;
+      --yellow: #f2c94c;
+      --muted: #92abc4;
       --text: #e9f6ff;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-      background: radial-gradient(circle at top right, rgba(47, 136, 255, 0.20), transparent 36%),
-                  linear-gradient(135deg, #06101e 0%, #07192c 46%, #030712 100%);
-      color: var(--text);
       min-height: 100vh;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(56, 213, 255, 0.18), transparent 34%),
+        linear-gradient(135deg, #06101e 0%, #07192c 50%, #030712 100%);
     }
-    .app {
-      width: min(1500px, 100vw);
-      margin: 0 auto;
-      padding: 14px;
-    }
+    .app { width: min(1480px, 100vw); margin: 0 auto; padding: 14px; }
     .topbar {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: minmax(300px, 1fr) auto;
       gap: 12px;
       align-items: center;
-      border: 1px solid var(--line);
-      background: rgba(12, 27, 47, 0.86);
-      box-shadow: 0 0 20px rgba(56, 213, 255, 0.10) inset;
       padding: 12px 14px;
+      border: 1px solid var(--line);
       border-radius: 12px;
+      background: rgba(12, 27, 47, 0.9);
+      box-shadow: 0 0 20px rgba(56, 213, 255, 0.10) inset;
       margin-bottom: 12px;
     }
-    .title {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: baseline;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-    }
+    .title { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; font-weight: 800; }
     .title small { color: var(--muted); font-weight: 500; }
-    .chips {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .chip {
       border: 1px solid var(--line);
       background: #07182c;
@@ -230,36 +235,33 @@ const INDEX_HTML = String.raw`<!doctype html>
       font-size: 13px;
     }
     .chip strong { color: var(--text); }
-    .chip.ok strong { color: var(--green); }
-    .chip.ng strong { color: var(--red); }
+    .chip.pass strong { color: var(--green); }
+    .chip.failed strong { color: var(--red); }
     .grid {
       display: grid;
-      grid-template-columns: minmax(620px, 1.4fr) minmax(420px, 0.9fr);
+      grid-template-columns: minmax(620px, 1.35fr) minmax(420px, 0.9fr);
       gap: 12px;
     }
     .panel {
       border: 1px solid var(--line);
-      background: rgba(7, 17, 31, 0.86);
+      background: var(--panel);
       border-radius: 12px;
       overflow: hidden;
       min-width: 0;
     }
     .panel-title {
-      height: 40px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
+      min-height: 40px;
       padding: 0 12px;
       border-bottom: 1px solid var(--line);
-      color: var(--cyan);
       background: linear-gradient(90deg, rgba(56, 213, 255, 0.12), transparent);
+      color: var(--cyan);
+      font-weight: 800;
       font-size: 14px;
-      font-weight: 700;
     }
-    .video-wrap {
-      position: relative;
-      padding: 12px;
-    }
+    .video-wrap { padding: 12px; }
     canvas {
       display: block;
       width: 100%;
@@ -268,47 +270,18 @@ const INDEX_HTML = String.raw`<!doctype html>
       background: #111;
       border-radius: 8px;
     }
-    .legend {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 5px;
-    }
-    .right {
-      display: grid;
-      grid-template-rows: auto minmax(210px, 1fr) auto;
-      gap: 12px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-    th, td {
-      border-bottom: 1px solid rgba(36, 72, 109, 0.82);
-      padding: 10px 9px;
-      text-align: left;
-    }
-    th {
-      color: #abd8ff;
-      background: rgba(60, 141, 255, 0.12);
-      font-weight: 700;
-    }
-    tr.done { background: rgba(38, 208, 124, 0.28); }
+    .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; color: var(--muted); font-size: 12px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .right { display: grid; grid-template-rows: auto minmax(230px, 1fr) auto; gap: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid rgba(36, 72, 109, 0.82); padding: 10px 9px; text-align: left; }
+    th { color: #abd8ff; background: rgba(60, 141, 255, 0.12); font-weight: 800; }
+    tr.pass { background: rgba(38, 208, 124, 0.27); }
     tr.running { background: rgba(60, 141, 255, 0.27); }
-    tr.ng { background: rgba(255, 92, 108, 0.24); }
+    tr.failed { background: rgba(255, 92, 108, 0.24); }
     .status-pill {
       display: inline-block;
-      min-width: 74px;
+      min-width: 76px;
       padding: 4px 8px;
       border-radius: 999px;
       text-align: center;
@@ -316,12 +289,13 @@ const INDEX_HTML = String.raw`<!doctype html>
       color: var(--muted);
       background: #08182b;
       font-size: 12px;
+      font-weight: 800;
     }
-    .status-pill.done { color: #062012; background: var(--green); border-color: var(--green); font-weight: 800; }
-    .status-pill.running { color: white; background: var(--blue); border-color: var(--blue); font-weight: 800; }
-    .status-pill.ng { color: white; background: var(--red); border-color: var(--red); font-weight: 800; }
+    .status-pill.pass { color: #062012; background: var(--green); border-color: var(--green); }
+    .status-pill.running { color: #fff; background: var(--blue); border-color: var(--blue); }
+    .status-pill.failed { color: #fff; background: var(--red); border-color: var(--red); }
     .log {
-      min-height: 170px;
+      min-height: 210px;
       padding: 12px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       color: #bcebd8;
@@ -330,6 +304,17 @@ const INDEX_HTML = String.raw`<!doctype html>
       overflow: auto;
       font-size: 13px;
     }
+    .alert {
+      display: none;
+      margin: 0 12px 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 92, 108, 0.72);
+      background: rgba(255, 92, 108, 0.14);
+      color: #ffd7dc;
+      font-weight: 800;
+    }
+    .alert.visible { display: block; }
     .controls {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -344,30 +329,30 @@ const INDEX_HTML = String.raw`<!doctype html>
       border-radius: 9px;
       padding: 10px 11px;
       cursor: pointer;
-      font-weight: 700;
+      font-weight: 800;
     }
     button:hover, select:hover { border-color: var(--cyan); }
     button.primary { background: linear-gradient(135deg, #1260d6, #0aa0c7); border-color: #36c9ff; }
     button.warn { background: linear-gradient(135deg, #7d4410, #9f7816); border-color: var(--yellow); }
-    button.danger { background: linear-gradient(135deg, #7f1826, #b72a3c); border-color: var(--red); }
+    .hint { color: var(--muted); font-size: 13px; padding: 0 12px 12px; line-height: 1.7; }
     .steps-bar {
       grid-column: 1 / -1;
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
       margin-top: 12px;
     }
     .step-card {
       border: 1px solid var(--line);
       border-radius: 10px;
-      padding: 11px;
+      padding: 12px;
       background: rgba(9, 26, 46, 0.92);
-      min-height: 76px;
+      min-height: 84px;
     }
-    .step-card .name { font-weight: 700; margin-bottom: 8px; }
-    .step-card.done { border-color: var(--green); box-shadow: 0 0 0 1px rgba(38, 208, 124, 0.25) inset; }
+    .step-card .name { font-weight: 800; margin-bottom: 8px; }
+    .step-card.pass { border-color: var(--green); box-shadow: 0 0 0 1px rgba(38, 208, 124, 0.25) inset; }
     .step-card.running { border-color: var(--blue); box-shadow: 0 0 0 1px rgba(60, 141, 255, 0.35) inset; }
-    .step-card.ng { border-color: var(--red); box-shadow: 0 0 0 1px rgba(255, 92, 108, 0.35) inset; }
+    .step-card.failed { border-color: var(--red); box-shadow: 0 0 0 1px rgba(255, 92, 108, 0.35) inset; }
     .metrics {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -375,24 +360,13 @@ const INDEX_HTML = String.raw`<!doctype html>
       padding: 12px;
       border-top: 1px solid var(--line);
     }
-    .metric {
-      border: 1px solid rgba(36, 72, 109, 0.9);
-      border-radius: 10px;
-      padding: 10px;
-      background: rgba(16, 36, 62, 0.72);
-    }
+    .metric { border: 1px solid rgba(36, 72, 109, 0.9); border-radius: 10px; padding: 10px; background: var(--panel-2); }
     .metric span { display: block; color: var(--muted); font-size: 12px; }
     .metric strong { display: block; font-size: 22px; margin-top: 4px; }
-    .hint {
-      color: var(--muted);
-      font-size: 13px;
-      padding: 0 12px 12px;
-      line-height: 1.7;
-    }
     @media (max-width: 1100px) {
       .grid { grid-template-columns: 1fr; }
-      .steps-bar { grid-template-columns: 1fr 1fr; }
       .controls { grid-template-columns: 1fr 1fr; }
+      .steps-bar { grid-template-columns: 1fr; }
       .metrics { grid-template-columns: 1fr 1fr; }
     }
   </style>
@@ -401,15 +375,15 @@ const INDEX_HTML = String.raw`<!doctype html>
   <main class="app">
     <section class="topbar">
       <div class="title">
-        <span>手机检测与包装 AI 视觉 SOP 合规检测系统</span>
-        <small>Standalone Demo · 目标检测 + 手部关键点 + SOP 状态机</small>
+        <span>AI 视觉 SOP 合规检测系统</span>
+        <small>正面 / 反面 / 整体 · Idle / Running / Pass / Failed</small>
       </div>
       <div class="chips">
-        <span class="chip">项目：<strong>手机包装SOP</strong></span>
+        <span class="chip">项目：<strong>产品三步检测SOP</strong></span>
         <span class="chip">作业员：<strong>张三</strong></span>
-        <span class="chip">模式：<strong id="modeText">正常顺序</strong></span>
+        <span class="chip">场景：<strong id="modeText">正常检测</strong></span>
         <span class="chip">耗时：<strong id="elapsedText">00:00</strong></span>
-        <span class="chip" id="resultChip">结果：<strong id="resultText">待开始</strong></span>
+        <span class="chip" id="resultChip">最终结果：<strong id="resultText">Idle</strong></span>
       </div>
     </section>
 
@@ -423,15 +397,15 @@ const INDEX_HTML = String.raw`<!doctype html>
           <canvas id="scene" width="1280" height="720"></canvas>
           <div class="legend">
             <span><i class="dot" style="background:#38d5ff"></i>ROI</span>
-            <span><i class="dot" style="background:#26d07c"></i>AI检测框</span>
-            <span><i class="dot" style="background:#f2c94c"></i>低置信度目标</span>
-            <span><i class="dot" style="background:#ff5c6c"></i>NG异常</span>
+            <span><i class="dot" style="background:#26d07c"></i>Pass 检测框</span>
+            <span><i class="dot" style="background:#3c8dff"></i>Running 检测框</span>
+            <span><i class="dot" style="background:#ff5c6c"></i>Failed 告警</span>
           </div>
         </div>
         <div class="metrics">
           <div class="metric"><span>检测目标</span><strong id="metricObjects">0</strong></div>
           <div class="metric"><span>当前步骤</span><strong id="metricStep">-</strong></div>
-          <div class="metric"><span>完成步骤</span><strong id="metricDone">0/5</strong></div>
+          <div class="metric"><span>Pass 步骤</span><strong id="metricPass">0/3</strong></div>
           <div class="metric"><span>稳定帧</span><strong id="metricStable">0</strong></div>
         </div>
       </section>
@@ -444,8 +418,8 @@ const INDEX_HTML = String.raw`<!doctype html>
               <tr>
                 <th style="width:48px">No</th>
                 <th>步骤</th>
-                <th style="width:95px">结果</th>
-                <th style="width:120px">说明</th>
+                <th style="width:95px">状态</th>
+                <th>说明</th>
               </tr>
             </thead>
             <tbody id="stepsTable"></tbody>
@@ -455,6 +429,7 @@ const INDEX_HTML = String.raw`<!doctype html>
         <section class="panel">
           <div class="panel-title">当前步骤 / 检测日志</div>
           <div class="log" id="logPanel"></div>
+          <div class="alert" id="alertPanel"></div>
         </section>
 
         <section class="panel">
@@ -464,14 +439,15 @@ const INDEX_HTML = String.raw`<!doctype html>
             <button id="pauseBtn">暂停</button>
             <button id="resetBtn">重置</button>
             <select id="scenarioSelect" title="演示场景">
-              <option value="normal">正常顺序</option>
-              <option value="skipDocs">异常：漏放说明书</option>
-              <option value="wrongOrder">异常：手机提前放入</option>
+              <option value="normal">正常检测</option>
+              <option value="frontFailed">正面失败</option>
+              <option value="backFailed">反面失败</option>
+              <option value="overallFailed">整体失败</option>
             </select>
             <button class="warn" id="exportBtn">导出记录</button>
           </div>
           <p class="hint">
-            说明：该演示包内置模拟 AI 检测流，用于复刻产品能力演示。生产环境可将前端接入真实摄像头和后端模型推理结果，保留同一套 SOP 状态机与 UI。
+            说明：该演示包按照最新设计文档实现三步 SOP 状态机。生产环境可将模拟检测流替换为真实摄像头和 AI 推理结果。
           </p>
         </section>
       </section>
@@ -486,6 +462,7 @@ const INDEX_HTML = String.raw`<!doctype html>
     const stepsTable = document.getElementById("stepsTable");
     const stepsBar = document.getElementById("stepsBar");
     const logPanel = document.getElementById("logPanel");
+    const alertPanel = document.getElementById("alertPanel");
     const modeText = document.getElementById("modeText");
     const elapsedText = document.getElementById("elapsedText");
     const resultText = document.getElementById("resultText");
@@ -493,7 +470,7 @@ const INDEX_HTML = String.raw`<!doctype html>
     const frameInfo = document.getElementById("frameInfo");
     const metricObjects = document.getElementById("metricObjects");
     const metricStep = document.getElementById("metricStep");
-    const metricDone = document.getElementById("metricDone");
+    const metricPass = document.getElementById("metricPass");
     const metricStable = document.getElementById("metricStable");
     const startBtn = document.getElementById("startBtn");
     const pauseBtn = document.getElementById("pauseBtn");
@@ -501,22 +478,19 @@ const INDEX_HTML = String.raw`<!doctype html>
     const exportBtn = document.getElementById("exportBtn");
     const scenarioSelect = document.getElementById("scenarioSelect");
 
+    const FRONT_BACK_FAILED_MESSAGE = "本次操作未按照SOP规范检测";
+    const OVERALL_PRECONDITION_MESSAGE = "由于正面（反面）检测操作不符合SOP规范，请重新检测。";
+
     const STEPS = [
-      { id: 1, name: "开口空盒检测", required: ["open_box"], timeout: 8 },
-      { id: 2, name: "放入手机并检测外观", required: ["phone"], timeout: 10 },
-      { id: 3, name: "放入说明书/保修卡", required: ["manual", "warranty_card"], timeout: 10 },
-      { id: 4, name: "放入充电线与配件", required: ["cable", "sim_pin"], timeout: 10 },
-      { id: 5, name: "合盖封装", required: ["closed_box"], timeout: 10 },
+      { id: 1, name: "正面", required: ["product_front"], failedMessage: FRONT_BACK_FAILED_MESSAGE },
+      { id: 2, name: "反面", required: ["product_back"], failedMessage: FRONT_BACK_FAILED_MESSAGE },
+      { id: 3, name: "整体", required: ["product_whole"], failedMessage: OVERALL_PRECONDITION_MESSAGE },
     ];
 
     const LABELS = {
-      open_box: "开口盒",
-      phone: "手机",
-      manual: "说明书",
-      warranty_card: "保修卡",
-      cable: "充电线",
-      sim_pin: "SIM针",
-      closed_box: "闭合盒",
+      product_front: "产品正面",
+      product_back: "产品反面",
+      product_whole: "产品整体",
       left_hand: "Left Hand",
       right_hand: "Right Hand",
     };
@@ -531,22 +505,26 @@ const INDEX_HTML = String.raw`<!doctype html>
       currentIndex: 0,
       stepStartedAt: 0,
       stableFrames: 0,
-      result: "待开始",
+      result: "Idle",
+      alert: "",
       records: [],
-      steps: STEPS.map((step, index) => ({
-        ...step,
-        status: index === 0 ? "Idle" : "Idle",
-        note: "等待执行",
-        duration: 0,
-      })),
       detections: [],
-      warning: "",
       lastFrame: performance.now(),
       fps: 0,
+      steps: [],
     };
 
+    function initialSteps() {
+      return STEPS.map((step) => ({
+        ...step,
+        status: "Idle",
+        note: "未开始检测",
+        duration: 0,
+      }));
+    }
+
     function elapsedSeconds() {
-      if (!state.running) return 0;
+      if (!state.running && state.startedAt === 0) return 0;
       const now = state.paused ? state.pausedAt : performance.now();
       return Math.max(0, (now - state.startedAt - state.pauseTotal) / 1000);
     }
@@ -557,10 +535,11 @@ const INDEX_HTML = String.raw`<!doctype html>
       return mm + ":" + ss;
     }
 
-    function setScenario(value) {
-      state.scenario = value;
-      modeText.textContent = value === "normal" ? "正常顺序" : value === "skipDocs" ? "漏放说明书" : "手机提前放入";
-      reset();
+    function scenarioName(value) {
+      return value === "frontFailed" ? "正面失败"
+        : value === "backFailed" ? "反面失败"
+        : value === "overallFailed" ? "整体失败"
+        : "正常检测";
     }
 
     function start() {
@@ -578,15 +557,12 @@ const INDEX_HTML = String.raw`<!doctype html>
       state.currentIndex = 0;
       state.stepStartedAt = 0;
       state.stableFrames = 0;
-      state.result = "检测中";
+      state.result = "Running";
+      state.alert = "";
       state.records = [];
-      state.warning = "";
-      state.steps = STEPS.map((step, index) => ({
-        ...step,
-        status: index === 0 ? "Running" : "Idle",
-        note: index === 0 ? "正在检测" : "等待执行",
-        duration: 0,
-      }));
+      state.steps = initialSteps();
+      state.steps[0].status = "Running";
+      state.steps[0].note = "正在检测";
       startBtn.textContent = "继续检测";
       pauseBtn.textContent = "暂停";
     }
@@ -612,56 +588,109 @@ const INDEX_HTML = String.raw`<!doctype html>
       state.currentIndex = 0;
       state.stepStartedAt = 0;
       state.stableFrames = 0;
-      state.result = "待开始";
+      state.result = "Idle";
+      state.alert = "";
       state.records = [];
-      state.warning = "";
       state.detections = [];
-      state.steps = STEPS.map((step) => ({ ...step, status: "Idle", note: "等待执行", duration: 0 }));
+      state.steps = initialSteps();
       startBtn.textContent = "开始检测";
       pauseBtn.textContent = "暂停";
     }
 
-    function completeCurrentStep(nowSeconds) {
-      const step = state.steps[state.currentIndex];
-      step.status = "Done";
-      step.note = "已完成";
-      step.duration = Math.max(0, nowSeconds - state.stepStartedAt);
+    function setScenario(value) {
+      state.scenario = value;
+      modeText.textContent = scenarioName(value);
+      reset();
+    }
+
+    function detection(className, x, y, w, h, confidence) {
+      return { className, x, y, w, h, confidence };
+    }
+
+    function hasFailedPrecondition() {
+      return state.steps[0].status === "Failed" || state.steps[1].status === "Failed";
+    }
+
+    function overallPreconditionMessage() {
+      const frontFailed = state.steps[0].status === "Failed";
+      const backFailed = state.steps[1].status === "Failed";
+      if (frontFailed && backFailed) return OVERALL_PRECONDITION_MESSAGE;
+      if (frontFailed) return "由于正面检测操作不符合SOP规范，请重新检测。";
+      if (backFailed) return "由于反面检测操作不符合SOP规范，请重新检测。";
+      return "";
+    }
+
+    function recordStep(step, atSeconds) {
       state.records.push({
-        at: nowSeconds.toFixed(2),
+        at: Number(atSeconds.toFixed(2)),
         step: step.name,
-        status: "Done",
+        status: step.status,
+        message: step.note,
         detections: state.detections.map((item) => ({
           className: item.className,
           confidence: Number(item.confidence.toFixed(2)),
         })),
       });
+    }
+
+    function failCurrentStep(message, atSeconds) {
+      const step = state.steps[state.currentIndex];
+      if (!step) return;
+      step.status = "Failed";
+      step.note = message;
+      step.duration = Math.max(0, atSeconds - state.stepStartedAt);
+      state.result = "Failed";
+      state.alert = message;
+      recordStep(step, atSeconds);
+
+      if (step.id === 1 || step.id === 2) {
+        const overall = state.steps[2];
+        overall.status = "Failed";
+        overall.note = overallPreconditionMessage() || OVERALL_PRECONDITION_MESSAGE;
+        overall.duration = 0;
+        state.alert = overall.note;
+        state.records.push({
+          at: Number(atSeconds.toFixed(2)),
+          step: overall.name,
+          status: overall.status,
+          message: overall.note,
+          detections: [],
+        });
+      }
+
+      state.running = false;
+    }
+
+    function passCurrentStep(atSeconds) {
+      const step = state.steps[state.currentIndex];
+      step.status = "Pass";
+      step.note = "检测成功";
+      step.duration = Math.max(0, atSeconds - state.stepStartedAt);
+      recordStep(step, atSeconds);
       state.currentIndex += 1;
       state.stableFrames = 0;
-      state.stepStartedAt = nowSeconds;
+      state.stepStartedAt = atSeconds;
+
       if (state.currentIndex >= state.steps.length) {
-        state.result = "OK";
+        state.result = "Pass";
         state.running = false;
         return;
       }
+
       state.steps[state.currentIndex].status = "Running";
       state.steps[state.currentIndex].note = "正在检测";
+      state.result = "Running";
     }
 
-    function markNg(reason, nowSeconds) {
-      const step = state.steps[state.currentIndex];
-      if (step) {
-        step.status = "NG";
-        step.note = reason;
-      }
-      state.result = "NG";
-      state.running = false;
-      state.warning = reason;
-      state.records.push({
-        at: nowSeconds.toFixed(2),
-        step: step ? step.name : "未知步骤",
-        status: "NG",
-        reason,
-      });
+    function getScenarioFailureTime(stepId) {
+      if (state.scenario === "frontFailed" && stepId === 1) return 2.7;
+      if (state.scenario === "backFailed" && stepId === 2) return 2.7;
+      if (state.scenario === "overallFailed" && stepId === 3) return 2.7;
+      return null;
+    }
+
+    function getStepElapsed(nowSeconds) {
+      return Math.max(0, nowSeconds - state.stepStartedAt);
     }
 
     function updateState(nowSeconds) {
@@ -669,90 +698,60 @@ const INDEX_HTML = String.raw`<!doctype html>
       if (state.stepStartedAt === 0) {
         state.stepStartedAt = nowSeconds;
       }
-      const current = state.steps[state.currentIndex];
-      if (!current) return;
+      const step = state.steps[state.currentIndex];
+      if (!step) return;
 
-      const classSet = new Set(state.detections.map((item) => item.className));
-      const lowConfidence = state.detections.some((item) => item.confidence < 0.72);
-      const satisfied = current.required.every((className) => classSet.has(className));
-      const hasHand = classSet.has("left_hand") || classSet.has("right_hand");
-
-      if (state.scenario === "wrongOrder" && nowSeconds > 5 && nowSeconds < 9 && state.currentIndex === 0 && classSet.has("phone")) {
-        markNg("顺序错误：手机在开口空盒确认前进入工位", nowSeconds);
+      if (step.id === 3 && hasFailedPrecondition()) {
+        failCurrentStep(overallPreconditionMessage() || OVERALL_PRECONDITION_MESSAGE, nowSeconds);
         return;
       }
 
-      if (lowConfidence) {
-        state.warning = "存在低置信度目标，等待连续稳定帧";
-      } else {
-        state.warning = "";
+      const stepElapsed = getStepElapsed(nowSeconds);
+      const failureTime = getScenarioFailureTime(step.id);
+      if (failureTime !== null && stepElapsed >= failureTime) {
+        failCurrentStep(step.failedMessage, nowSeconds);
+        return;
       }
 
-      if (satisfied && hasHand && !lowConfidence) {
-        state.stableFrames += 1;
-      } else if (satisfied && current.id === 1 && !lowConfidence) {
+      const classSet = new Set(state.detections.map((item) => item.className));
+      const satisfied = step.required.every((className) => classSet.has(className));
+      const hasHand = classSet.has("left_hand") || classSet.has("right_hand");
+      if (satisfied && hasHand) {
         state.stableFrames += 1;
       } else {
         state.stableFrames = Math.max(0, state.stableFrames - 1);
       }
 
-      if (state.stableFrames >= 18) {
-        completeCurrentStep(nowSeconds);
-        return;
+      if (state.stableFrames >= 22) {
+        passCurrentStep(nowSeconds);
       }
-
-      if (nowSeconds - state.stepStartedAt > current.timeout) {
-        markNg("超时未完成：" + current.name, nowSeconds);
-      }
-    }
-
-    function detection(className, x, y, w, h, confidence) {
-      return { className, x, y, w, h, confidence };
     }
 
     function getDetections(t) {
-      const list = [];
-      const scenario = state.scenario;
+      if (!state.running && state.result === "Idle") return [];
+      const step = state.steps[state.currentIndex] || state.steps[state.steps.length - 1];
+      const stepElapsed = getStepElapsed(t);
       const jitter = Math.sin(t * 3) * 5;
+      const detections = [];
 
-      if (!state.running && state.result !== "OK" && state.result !== "NG") {
-        return list;
-      }
+      detections.push(detection("left_hand", 300 + jitter, 375 + Math.sin(t) * 8, 150, 180, 0.93));
+      detections.push(detection("right_hand", 820 - jitter, 370 + Math.cos(t) * 8, 155, 185, 0.92));
 
-      if (scenario === "wrongOrder" && t > 4.5 && t < 8.5) {
-        list.push(detection("phone", 470, 330, 260, 130, 0.94));
-        list.push(detection("right_hand", 790 + jitter, 270, 150, 190, 0.91));
-        return list;
+      if (step && step.status === "Running") {
+        if (step.id === 1) {
+          detections.push(detection("product_front", 485, 250, 310, 210, stepElapsed < 1.0 ? 0.72 : 0.94));
+        } else if (step.id === 2) {
+          detections.push(detection("product_back", 485, 250, 310, 210, stepElapsed < 1.0 ? 0.73 : 0.93));
+        } else if (step.id === 3) {
+          detections.push(detection("product_whole", 430, 225, 420, 260, stepElapsed < 1.0 ? 0.76 : 0.95));
+        }
+      } else if (state.result === "Pass") {
+        detections.push(detection("product_whole", 430, 225, 420, 260, 0.96));
       }
-
-      if (t >= 1.5) {
-        list.push(detection("open_box", 405, 250, 470, 285, 0.93));
-      }
-      if (t >= 6.5) {
-        list.push(detection("phone", 485, 318, 290, 150, t < 7.5 ? 0.70 : 0.95));
-      }
-      if (t >= 12 && scenario !== "skipDocs") {
-        list.push(detection("manual", 520, 335, 220, 118, 0.92));
-        list.push(detection("warranty_card", 548, 370, 160, 72, 0.89));
-      }
-      if (t >= 20) {
-        list.push(detection("cable", 515, 376, 210, 78, 0.91));
-        list.push(detection("sim_pin", 715, 358, 48, 44, 0.86));
-      }
-      if (t >= 28) {
-        const existing = list.filter((item) => !["open_box", "phone", "manual", "warranty_card", "cable", "sim_pin"].includes(item.className));
-        existing.push(detection("closed_box", 430, 258, 430, 245, 0.95));
-        list.splice(0, list.length, ...existing);
-      }
-
-      if (t > 2 && t < 38) {
-        list.push(detection("left_hand", 300 + jitter, 350 + Math.sin(t) * 12, 150, 185, 0.94));
-        list.push(detection("right_hand", 805 - jitter, 345 + Math.cos(t) * 10, 155, 190, 0.93));
-      }
-      return list;
+      return detections;
     }
 
-    function drawDesk() {
+    function drawBackground() {
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
       gradient.addColorStop(0, "#9f7445");
       gradient.addColorStop(0.45, "#bd8c55");
@@ -767,80 +766,49 @@ const INDEX_HTML = String.raw`<!doctype html>
         ctx.fillRect(238 + i * 23, 40, 16, 14);
         ctx.fillRect(238 + i * 23, 64, 16, 14);
       }
-      ctx.fillStyle = "#111827";
-      ctx.beginPath();
-      ctx.roundRect(1040, 255, 120, 220, 24);
-      ctx.fill();
-      ctx.fillStyle = "#05070c";
-      ctx.beginPath();
-      ctx.ellipse(72, 370, 44, 110, 0.1, 0, Math.PI * 2);
-      ctx.fill();
 
-      ctx.strokeStyle = "rgba(56, 213, 255, 0.9)";
+      ctx.strokeStyle = "rgba(56, 213, 255, 0.92)";
       ctx.lineWidth = 3;
-      ctx.strokeRect(150, 160, 900, 430);
+      ctx.strokeRect(150, 150, 900, 450);
       ctx.fillStyle = "rgba(56, 213, 255, 0.08)";
-      ctx.fillRect(150, 160, 900, 430);
+      ctx.fillRect(150, 150, 900, 450);
       ctx.fillStyle = "#7de7ff";
       ctx.font = "18px sans-serif";
-      ctx.fillText("ROI 包装检测区域", 162, 186);
+      ctx.fillText("ROI 产品检测区域", 164, 180);
     }
 
-    function drawObjects(t) {
-      if (t >= 1.5 && t < 28) {
-        ctx.fillStyle = "#0b1020";
+    function drawProduct(t) {
+      const step = state.steps[state.currentIndex] || {};
+      const status = step.status;
+      const activeStepId = status === "Running" ? step.id : state.result === "Pass" ? 3 : 0;
+      const x = activeStepId === 3 ? 430 : 485;
+      const y = activeStepId === 3 ? 225 : 250;
+      const w = activeStepId === 3 ? 420 : 310;
+      const h = activeStepId === 3 ? 260 : 210;
+
+      if (!activeStepId) {
+        ctx.fillStyle = "rgba(15, 23, 42, 0.72)";
         ctx.beginPath();
-        ctx.roundRect(405, 250, 470, 285, 18);
+        ctx.roundRect(460, 250, 360, 220, 18);
         ctx.fill();
-        ctx.fillStyle = "#1f2937";
-        ctx.beginPath();
-        ctx.roundRect(452, 297, 376, 190, 12);
-        ctx.fill();
-      }
-      if (t >= 6.5 && t < 28) {
-        ctx.fillStyle = "#101827";
-        ctx.beginPath();
-        ctx.roundRect(485, 318, 290, 150, 20);
-        ctx.fill();
-        ctx.fillStyle = "#223a55";
-        ctx.beginPath();
-        ctx.roundRect(506, 336, 248, 112, 12);
-        ctx.fill();
-        ctx.fillStyle = "#a6f3ff";
-        ctx.font = "22px sans-serif";
-        ctx.fillText("PHONE", 580, 398);
-      }
-      if (t >= 12 && t < 28 && state.scenario !== "skipDocs") {
-        ctx.fillStyle = "#f4f7fa";
-        ctx.fillRect(520, 335, 220, 118);
-        ctx.fillStyle = "#64748b";
-        ctx.font = "18px sans-serif";
-        ctx.fillText("说明书", 590, 382);
-        ctx.fillStyle = "#dbeafe";
-        ctx.fillRect(548, 370, 160, 72);
-        ctx.fillStyle = "#1e3a8a";
-        ctx.fillText("保修卡", 598, 415);
-      }
-      if (t >= 20 && t < 28) {
-        ctx.strokeStyle = "#111827";
-        ctx.lineWidth = 15;
-        ctx.beginPath();
-        ctx.arc(620, 405, 80, 0.3, 5.9);
-        ctx.stroke();
-        ctx.fillStyle = "#cbd5e1";
-        ctx.fillRect(715, 358, 48, 44);
-      }
-      if (t >= 28 || state.result === "OK") {
-        ctx.fillStyle = "#0f172a";
-        ctx.beginPath();
-        ctx.roundRect(430, 258, 430, 245, 18);
-        ctx.fill();
-        ctx.fillStyle = "#27364e";
-        ctx.fillRect(465, 300, 360, 150);
-        ctx.fillStyle = "#b7e9ff";
+        ctx.fillStyle = "#7de7ff";
         ctx.font = "28px sans-serif";
-        ctx.fillText("已封装手机", 560, 383);
+        ctx.fillText("等待开始检测", 545, 370);
+        return;
       }
+
+      ctx.fillStyle = activeStepId === 1 ? "#172554" : activeStepId === 2 ? "#1f2937" : "#0f172a";
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, 24);
+      ctx.fill();
+      ctx.fillStyle = activeStepId === 1 ? "#60a5fa" : activeStepId === 2 ? "#94a3b8" : "#b7e9ff";
+      ctx.font = "34px sans-serif";
+      const label = activeStepId === 1 ? "产品正面" : activeStepId === 2 ? "产品反面" : "产品整体";
+      ctx.fillText(label, x + w / 2 - 68, y + h / 2 + 10);
+
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.fillRect(x + 28, y + 34, w - 56, 18);
+      ctx.fillRect(x + 28, y + h - 54, w - 56, 18);
     }
 
     function drawHand(det, color) {
@@ -854,7 +822,7 @@ const INDEX_HTML = String.raw`<!doctype html>
       ctx.stroke();
 
       const cx = det.x + det.w * 0.5;
-      const cy = det.y + det.h * 0.22;
+      const cy = det.y + det.h * 0.24;
       ctx.fillStyle = color;
       for (let i = 0; i < 5; i += 1) {
         const x = det.x + 24 + i * (det.w - 48) / 4;
@@ -873,10 +841,9 @@ const INDEX_HTML = String.raw`<!doctype html>
     function drawDetections(detections) {
       detections.forEach((det) => {
         const isHand = det.className === "left_hand" || det.className === "right_hand";
-        const color = det.confidence < 0.72 ? "#f2c94c" : "#26d07c";
-        if (isHand) {
-          drawHand(det, color);
-        }
+        const color = state.result === "Failed" ? "#ff5c6c" : det.confidence < 0.8 ? "#f2c94c" : "#26d07c";
+        if (isHand) drawHand(det, color);
+
         ctx.strokeStyle = color;
         ctx.lineWidth = 3;
         ctx.strokeRect(det.x, det.y, det.w, det.h);
@@ -892,55 +859,59 @@ const INDEX_HTML = String.raw`<!doctype html>
 
     function renderScene(t) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawDesk();
-      drawObjects(t);
+      drawBackground();
+      drawProduct(t);
       drawDetections(state.detections);
-      if (state.warning || state.result === "NG") {
+
+      if (state.alert) {
         ctx.fillStyle = "rgba(255, 92, 108, 0.88)";
-        ctx.fillRect(150, 602, 900, 54);
+        ctx.fillRect(150, 612, 900, 58);
         ctx.fillStyle = "#fff";
         ctx.font = "24px sans-serif";
-        ctx.fillText(state.warning || "检测异常", 170, 638);
+        ctx.fillText(state.alert, 170, 648);
       }
     }
 
     function renderUI(t) {
       elapsedText.textContent = formatTime(t);
       resultText.textContent = state.result;
-      resultChip.className = "chip " + (state.result === "OK" ? "ok" : state.result === "NG" ? "ng" : "");
+      resultChip.className = "chip " + state.result.toLowerCase();
 
-      stepsTable.innerHTML = state.steps.map((step, index) => {
+      stepsTable.innerHTML = state.steps.map((step) => {
         const rowClass = step.status.toLowerCase();
-        const pillClass = "status-pill " + rowClass;
-        return "<tr class='" + rowClass + "'><td>" + step.id + "</td><td>" + step.name + "</td><td><span class='" + pillClass + "'>" + step.status + "</span></td><td>" + step.note + "</td></tr>";
+        return "<tr class='" + rowClass + "'><td>" + step.id + "</td><td>" + step.name + "</td><td><span class='status-pill " + rowClass + "'>" + step.status + "</span></td><td>" + step.note + "</td></tr>";
       }).join("");
 
       stepsBar.innerHTML = state.steps.map((step) => {
-        return "<div class='step-card " + step.status.toLowerCase() + "'><div class='name'>" + step.id + ". " + step.name + "</div><span class='status-pill " + step.status.toLowerCase() + "'>" + step.status + "</span></div>";
+        const cls = step.status.toLowerCase();
+        return "<div class='step-card " + cls + "'><div class='name'>" + step.id + ". " + step.name + "</div><span class='status-pill " + cls + "'>" + step.status + "</span><div class='hint' style='padding:8px 0 0'>" + step.note + "</div></div>";
       }).join("");
 
       const current = state.steps[state.currentIndex] || state.steps[state.steps.length - 1];
-      const classCounts = state.detections.reduce((acc, item) => {
+      const inferMs = Math.max(18, Math.round(32 + Math.sin(t * 2) * 8 + state.detections.length * 2));
+      const counts = state.detections.reduce((acc, item) => {
         acc[item.className] = (acc[item.className] || 0) + 1;
         return acc;
       }, {});
-      const validTargets = Object.keys(classCounts).map((key) => (LABELS[key] || key) + classCounts[key]).join("，") || "无";
-      const doneCount = state.steps.filter((step) => step.status === "Done").length;
-      const inferMs = Math.max(18, Math.round(34 + Math.sin(t * 2) * 8 + state.detections.length * 2));
+      const validTargets = Object.keys(counts).map((key) => (LABELS[key] || key) + counts[key]).join("，") || "无";
+      const passCount = state.steps.filter((step) => step.status === "Pass").length;
+
       frameInfo.textContent = "FPS " + state.fps.toFixed(0) + " · 推理 " + inferMs + "ms";
       metricObjects.textContent = String(state.detections.length);
-      metricStep.textContent = current ? String(current.id) : "-";
-      metricDone.textContent = doneCount + "/" + state.steps.length;
+      metricStep.textContent = current ? current.name : "-";
+      metricPass.textContent = passCount + "/3";
       metricStable.textContent = String(state.stableFrames);
+      alertPanel.textContent = state.alert;
+      alertPanel.className = "alert " + (state.alert ? "visible" : "");
 
       logPanel.textContent = [
         "当前步骤：" + (current ? current.name : "全部完成"),
+        "当前状态：" + state.result,
         "检测数量：" + state.detections.length,
         "检测耗时：" + inferMs + "ms",
         "有效目标：" + validTargets,
         "稳定帧数：" + state.stableFrames,
-        "识别告警：" + (state.warning || "False"),
-        "流程完成：" + (state.result === "OK" ? "True" : "False"),
+        "失败提示：" + (state.alert || "无"),
         "最终结果：" + state.result,
       ].join("\\n");
     }
@@ -959,16 +930,17 @@ const INDEX_HTML = String.raw`<!doctype html>
 
     function exportRecord() {
       const payload = {
-        project: "手机检测与包装SOP",
+        project: "产品三步检测SOP",
         operator: "张三",
         scenario: state.scenario,
         result: state.result,
+        failedMessage: state.alert,
         durationSeconds: Number(elapsedSeconds().toFixed(2)),
         steps: state.steps.map((step) => ({
           id: step.id,
           name: step.name,
           status: step.status,
-          note: step.note,
+          message: step.note,
           duration: Number((step.duration || 0).toFixed(2)),
         })),
         events: state.records,
@@ -978,7 +950,7 @@ const INDEX_HTML = String.raw`<!doctype html>
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = "phone-sop-detection-record.json";
+      anchor.download = "three-step-sop-detection-record.json";
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();

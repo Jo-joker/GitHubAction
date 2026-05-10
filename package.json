@@ -1,7 +1,7 @@
 {
   "name": "phone-sop-vision-demo",
   "version": "1.0.0",
-  "description": "Standalone demo for a phone inspection and packaging AI vision SOP compliance system.",
+  "description": "Standalone demo for a three-step AI vision SOP compliance detection system.",
   "private": true,
   "scripts": {
     "start:sop-demo": "node apps/phone-sop-vision-demo/server.js --no-open",
