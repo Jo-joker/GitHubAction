@@ -42,6 +42,10 @@ npm run build:sop-demo
 - `dist/phone-sop-vision-demo-linux-x64.tar.gz`
 - `dist/phone-sop-vision-demo-windows-x64/sop-vision-demo.exe`
 - `dist/phone-sop-vision-demo-windows-x64.zip`
+- `dist/phone-sop-vision-demo-macos-x64/sop-vision-demo`
+- `dist/phone-sop-vision-demo-macos-x64.tar.gz`
+- `dist/phone-sop-vision-demo-macos-arm64/sop-vision-demo`
+- `dist/phone-sop-vision-demo-macos-arm64.tar.gz`
 
 Linux 运行：
 
@@ -56,6 +60,19 @@ Windows 运行：
 ```
 
 > 注意：Linux 包中的 `sop-vision-demo` 是 ELF 可执行文件，不能在 Windows 中运行；Windows 需要使用 `phone-sop-vision-demo-windows-x64.zip` 内的 `sop-vision-demo.exe`。
+
+macOS 运行：
+
+```bash
+tar -xzf dist/phone-sop-vision-demo-macos-arm64.tar.gz
+cd phone-sop-vision-demo-macos-arm64
+chmod +x ./sop-vision-demo
+xattr -dr com.apple.quarantine ./sop-vision-demo 2>/dev/null || true
+codesign --force --sign - ./sop-vision-demo 2>/dev/null || true
+./sop-vision-demo --no-open
+```
+
+> Apple Silicon 机器优先使用 `macos-arm64` 包，Intel Mac 使用 `macos-x64` 包。由于该文件未经过 Apple Developer ID 公证，首次运行可能需要执行上面的 `xattr` / `codesign` 命令。
 
 ## 说明
 
