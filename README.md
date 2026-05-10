@@ -113,11 +113,14 @@ The demo follows the latest design document:
 - Statuses: `Idle`, `Running`, `Pass`, `Failed`
 - Front/back failure message: `本次操作未按照SOP规范检测`
 - Overall precondition failure message: `由于正面（反面）检测操作不符合SOP规范，请重新检测。`
+- Monitoring view: embedded keyframes extracted from seconds 31-43 of the provided source video
 
 - Product design document: `docs/jetson-sop-product-design.md`
 - Demo source: `apps/phone-sop-vision-demo`
 - Linux x64 standalone package output: `dist/phone-sop-vision-demo-linux-x64.tar.gz`
 - Windows x64 standalone package output: `dist/phone-sop-vision-demo-windows-x64.zip`
+- macOS Intel package output: `dist/phone-sop-vision-demo-macos-x64.tar.gz`
+- macOS Apple Silicon package output: `dist/phone-sop-vision-demo-macos-arm64.tar.gz`
 
 Run locally during development:
 
@@ -139,3 +142,17 @@ Windows users should unzip `dist/phone-sop-vision-demo-windows-x64.zip` and run:
 ```
 
 The Linux `sop-vision-demo` binary cannot run on Windows and will fail with `Exec format error`.
+
+macOS users should use the package matching their CPU:
+
+```bash
+# Apple Silicon
+tar -xzf dist/phone-sop-vision-demo-macos-arm64.tar.gz
+cd phone-sop-vision-demo-macos-arm64
+
+# Intel Mac: use phone-sop-vision-demo-macos-x64.tar.gz instead.
+chmod +x ./sop-vision-demo
+xattr -dr com.apple.quarantine ./sop-vision-demo 2>/dev/null || true
+codesign --force --sign - ./sop-vision-demo 2>/dev/null || true
+./sop-vision-demo --no-open
+```
