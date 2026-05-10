@@ -64,7 +64,7 @@ function injectSeaBlob(binaryPath) {
 async function writePackageReadme(packageDir, platformLabel, command) {
   await writeFile(
     join(packageDir, "README.md"),
-    `# 手机检测与包装 AI 视觉 SOP 合规检测系统
+    `# AI 视觉 SOP 合规检测系统
 
 ## 运行
 
@@ -87,10 +87,12 @@ http://127.0.0.1:4788
 
 ## 演示能力
 
-- 手机检测与包装 SOP 五步流程
+- 正面 / 反面 / 整体三步 SOP 检测流程
 - 实时 ROI、AI 检测框和手部关键点可视化
-- Idle / Running / Done / NG 状态机
-- 正常顺序、漏放说明书、手机提前放入三种演示场景
+- Idle / Running / Pass / Failed 状态机
+- 正常检测、正面失败、反面失败、整体失败四种演示场景
+- 正面/反面失败提示：本次操作未按照SOP规范检测
+- 整体前置失败提示：由于正面（反面）检测操作不符合SOP规范，请重新检测。
 - 检测日志、指标面板和 JSON 检测记录导出
 
 该包为独立 ${platformLabel} 二进制演示包，不依赖本机 Node.js。
