@@ -113,6 +113,7 @@ The demo follows the latest design document:
 - Statuses: `Idle`, `Running`, `Pass`, `Failed`
 - Front/back failure message: `本次操作未按照SOP规范检测`
 - Overall precondition failure message: `由于正面（反面）检测操作不符合SOP规范，请重新检测。`
+- Monitoring view: embedded keyframes extracted from seconds 31-43 of the provided source video
 
 - Product design document: `docs/jetson-sop-product-design.md`
 - Demo source: `apps/phone-sop-vision-demo`
